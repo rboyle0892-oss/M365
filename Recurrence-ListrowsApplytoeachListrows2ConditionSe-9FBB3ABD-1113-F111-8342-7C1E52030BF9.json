@@ -49,7 +49,7 @@
       "actions": {
         "List_rows": {
           "runAfter": {
-            "Compose": [
+            "Compose_Org_Base_URL": [
               "Succeeded"
             ]
           },
@@ -60,7 +60,7 @@
           "inputs": {
             "parameters": {
               "entityName": "vmo_budgets",
-              "$filter": "vmo_enddate le '@{outputs('Compose')}' and vmo_smeemail ne null and statecode eq 0"
+              "$filter": "@{concat(\"vmo_enddate ge '\", outputs('Compose_Today'), \"' and vmo_enddate le '\", outputs('Compose_Window_End'), \"' and vmo_smeemail ne null and statecode eq 0\")}"
             },
             "host": {
               "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
@@ -80,20 +80,25 @@
               "inputs": {
                 "parameters": {
                   "entityName": "vmo_readinessrequests",
-                  "$filter": "_vmo_budget_value eq '@{items('Apply_to_each')?['vmo_budgetid']}' and statecode eq 0"
+                  "$filter": "@{concat('_vmo_budget_value eq ', outputs('Compose_Budget_ID'), ' and statecode eq 0')}"
                 },
                 "host": {
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "operationId": "ListRecords",
                   "connectionName": "shared_commondataserviceforapps_2"
                 }
+              },
+              "runAfter": {
+                "Compose_Budget_ID": [
+                  "Succeeded"
+                ]
               }
             },
             "Condition": {
               "actions": {
                 "Send_an_email_(V2)": {
                   "runAfter": {
-                    "Add_a_new_row": [
+                    "Compose_Readiness_Request_Link": [
                       "Succeeded"
                     ]
                   },
@@ -104,8 +109,8 @@
                   "inputs": {
                     "parameters": {
                       "emailMessage/To": "@items('Apply_to_each')?['vmo_smeemail']",
-                      "emailMessage/Subject": "Readiness Task Required:@{items('Apply_to_each')?['vmo_budget1']}",
-                      "emailMessage/Body": "<p>Test Test</p>",
+                      "emailMessage/Subject": "Readiness Task Required: @{items('Apply_to_each')?['vmo_budget1']}",
+                      "emailMessage/Body": "<p>Hello,</p><p>A Readiness Request has been created for budget <strong>@{items('Apply_to_each')?['vmo_budget1']}</strong>.</p><p>Please <a href=\"@{outputs('Compose_Readiness_Request_Link')}\">open the Readiness Request</a>, review the pre-filled details, and submit.</p><p>Thanks.</p>",
                       "emailMessage/Importance": "Normal"
                     },
                     "host": {
@@ -120,9 +125,9 @@
                   "inputs": {
                     "parameters": {
                       "entityName": "vmo_readinessrequests",
-                      "item/vmo_Budget@odata.bind": "@items('Apply_to_each')?['vmo_budgetid']",
+                      "item/vmo_Budget@odata.bind": "@{concat('/vmo_budgets(', outputs('Compose_Budget_ID'), ')')}",
                       "item/vmo_isthisrequired": true,
-                      "item/vmo_readinessrequest1": "concat('Readiness - ', items('Apply_to_each')?['vmo_budgetcode'])"
+                      "item/vmo_readinessrequest1": "@{concat('Readiness - ', coalesce(items('Apply_to_each')?['vmo_budgetcode'], items('Apply_to_each')?['vmo_budget1']))}"
                     },
                     "host": {
                       "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
@@ -130,6 +135,15 @@
                       "connectionName": "shared_commondataserviceforapps_2"
                     }
                   }
+                },
+                "Compose_Readiness_Request_Link": {
+                  "runAfter": {
+                    "Add_a_new_row": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "@{concat(outputs('Compose_Org_Base_URL'), '/main.aspx?pagetype=entityrecord&etn=vmo_readinessrequest&id=', outputs('Add_a_new_row')?['body/vmo_readinessrequestid'])}"
                 }
               },
               "runAfter": {
@@ -154,6 +168,10 @@
                 "operationMetadataId": "2aef2fef-1577-4d8b-8c89-98230a19c51b"
               },
               "type": "If"
+            },
+            "Compose_Budget_ID": {
+              "type": "Compose",
+              "inputs": "@replace(replace(items('Apply_to_each')?['vmo_budgetid'],'{',''),'}','')"
             }
           },
           "runAfter": {
@@ -166,10 +184,28 @@
           },
           "type": "Foreach"
         },
-        "Compose": {
+        "Compose_Today": {
           "runAfter": {},
           "type": "Compose",
+          "inputs": "@formatDateTime(utcNow(),'yyyy-MM-dd')"
+        },
+        "Compose_Window_End": {
+          "runAfter": {
+            "Compose_Today": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
           "inputs": "@formatDateTime(addDays(utcNow(),30),'yyyy-MM-dd')"
+        },
+        "Compose_Org_Base_URL": {
+          "runAfter": {
+            "Compose_Window_End": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "https://YOUR-ORG.crm.dynamics.com"
         }
       }
     },
