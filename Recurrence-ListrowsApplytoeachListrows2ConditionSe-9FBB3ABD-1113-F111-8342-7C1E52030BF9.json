@@ -1,0 +1,179 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps_2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "vmo_sharedcommondataserviceforapps_53838"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "vmo_sharedoffice365_0252d"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-02-26T13:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "51c0062c-bfe6-4cd6-9b74-2c8a1d907ef3"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "List_rows": {
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "573b4d28-60e7-47cc-b7af-63c9c336a940"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "vmo_budgets",
+              "$filter": "vmo_enddate le '@{outputs('Compose')}' and vmo_smeemail ne null and statecode eq 0"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps_2"
+            }
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('List_rows')?['body/value']",
+          "actions": {
+            "List_rows_2": {
+              "metadata": {
+                "operationMetadataId": "9eab8ec3-8340-4b28-bd46-125bd6fbb583"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "vmo_readinessrequests",
+                  "$filter": "_vmo_budget_value eq '@{items('Apply_to_each')?['vmo_budgetid']}' and statecode eq 0"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps_2"
+                }
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Send_an_email_(V2)": {
+                  "runAfter": {
+                    "Add_a_new_row": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a6107cb5-dec2-495d-901e-4fdfc64a0529"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "emailMessage/To": "@items('Apply_to_each')?['vmo_smeemail']",
+                      "emailMessage/Subject": "Readiness Task Required:@{items('Apply_to_each')?['vmo_budget1']}",
+                      "emailMessage/Body": "<p>Test Test</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "operationId": "SendEmailV2",
+                      "connectionName": "shared_office365"
+                    }
+                  }
+                },
+                "Add_a_new_row": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "vmo_readinessrequests",
+                      "item/vmo_Budget@odata.bind": "@items('Apply_to_each')?['vmo_budgetid']",
+                      "item/vmo_isthisrequired": true,
+                      "item/vmo_readinessrequest1": "concat('Readiness - ', items('Apply_to_each')?['vmo_budgetcode'])"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "CreateRecord",
+                      "connectionName": "shared_commondataserviceforapps_2"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "List_rows_2": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@length(outputs('List_rows_2')?['body/value'])",
+                      0
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2aef2fef-1577-4d8b-8c89-98230a19c51b"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "List_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5b58b23b-2b16-4c73-9fa4-8787ec6af0ba"
+          },
+          "type": "Foreach"
+        },
+        "Compose": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": "@formatDateTime(addDays(utcNow(),30),'yyyy-MM-dd')"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
