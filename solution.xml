@@ -1,11 +1,11 @@
-<ImportExportXml version="9.2.26021.145" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26021.145" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26021.00145">
+<ImportExportXml version="9.2.26022.150" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26022.150" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26022.00150">
   <SolutionManifest>
     <UniqueName>VMOMVP</UniqueName>
     <LocalizedNames>
       <LocalizedName description="VMO MVP" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.3</Version>
+    <Version>1.0.0.5</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>VMO</UniqueName>
@@ -81,7 +81,21 @@
       <RootComponent type="1" schemaName="vmo_readinessrequest" behavior="0" />
       <RootComponent type="29" id="{9fbb3abd-1113-f111-8342-7c1e52030bf9}" behavior="0" />
       <RootComponent type="62" schemaName="vmo_VMOMVP" behavior="0" />
+      <RootComponent type="80" schemaName="vmo_VMOMVP" behavior="0" />
     </RootComponents>
-    <MissingDependencies />
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)">
+          <package appName="AppModule Web Resources Package" version="2.5">AppModuleWebResources (2.5)</package>
+        </Required>
+        <Dependent type="80" schemaName="vmo_VMOMVP" displayName="VMO MVP" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.15)" id.uniquename="AppChannel">
+          <package appName="PowerAppsAppFramework Package" version="1.0.0.25">PowerAppsAppFramework_Anchor (1.0.0.25)</package>
+        </Required>
+        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=vmo_VMOMVP,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="vmo_VMOMVP" id.settingdefinitionid.uniquename="AppChannel" />
+      </MissingDependency>
+    </MissingDependencies>
   </SolutionManifest>
 </ImportExportXml>

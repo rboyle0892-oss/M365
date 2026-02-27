@@ -1,0 +1,241 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "vmo_sharedcommondataserviceforapps_74884"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "vmo_sharedoffice365_0252d"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-02-26T13:00:00Z"
+          },
+          "evaluatedRecurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-02-26T13:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "51c0062c-bfe6-4cd6-9b74-2c8a1d907ef3"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "List_rows": {
+          "runAfter": {
+            "Compose_Org_Base_URL": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "573b4d28-60e7-47cc-b7af-63c9c336a940"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "vmo_budgets",
+              "$filter": "statecode eq 0"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('List_rows')?['body/value']",
+          "actions": {
+            "List_rows_2": {
+              "runAfter": {
+                "Compose_Budget_ID": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9eab8ec3-8340-4b28-bd46-125bd6fbb583"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "vmo_readinessrequests",
+                  "$filter": "@concat('_vmo_budget_value eq ', outputs('Compose_Budget_ID'), ' and statecode eq 0')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Condition": {
+              "actions": {
+                "Send_an_email_(V2)": {
+                  "runAfter": {
+                    "Compose_Readiness_Request_Link": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a6107cb5-dec2-495d-901e-4fdfc64a0529"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@items('Apply_to_each')?['vmo_smeemail']",
+                      "emailMessage/Subject": "Readiness Task Required: @{items('Apply_to_each')?['vmo_budget1']}",
+                      "emailMessage/Body": "<p>Hello,</p><p>A Readiness Request has been created for budget <strong>@{items('Apply_to_each')?['vmo_budget1']}</strong>.</p><p>Please <a href=\"@{outputs('Compose_Readiness_Request_Link')}\">open the Readiness Request</a>, review the pre-filled details, and submit.</p><p>Thanks.</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Add_a_new_row": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "40e8cfb9-f699-4031-8347-ac9272ebb09e"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "CreateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "vmo_readinessrequests",
+                      "item/vmo_Budget@odata.bind": "@{concat('/vmo_budgets(', outputs('Compose_Budget_ID'), ')')}",
+                      "item/vmo_isthisrequired": true,
+                      "item/vmo_readinessrequest1": "@{concat('Readiness - ', coalesce(items('Apply_to_each')?['vmo_budgetcode'], items('Apply_to_each')?['vmo_budget1']))}"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Compose_Readiness_Request_Link": {
+                  "runAfter": {
+                    "Add_a_new_row": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b0f4f207-0daf-4ee7-9236-871c8bcc74ef"
+                  },
+                  "type": "Compose",
+                  "inputs": "@{concat(outputs('Compose_Org_Base_URL'), '/main.aspx?pagetype=entityrecord&etn=vmo_readinessrequest&id=', outputs('Add_a_new_row')?['body/vmo_readinessrequestid'])}"
+                }
+              },
+              "runAfter": {
+                "List_rows_2": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@length(outputs('List_rows_2')?['body/value'])",
+                      0
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2aef2fef-1577-4d8b-8c89-98230a19c51b"
+              },
+              "type": "If"
+            },
+            "Compose_Budget_ID": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "5f66be35-2983-43e8-b2ce-2a1da7bfffdd"
+              },
+              "type": "Compose",
+              "inputs": "@replace(replace(items('Apply_to_each')?['vmo_budgetid'],'{',''),'}','')"
+            }
+          },
+          "runAfter": {
+            "List_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5b58b23b-2b16-4c73-9fa4-8787ec6af0ba"
+          },
+          "type": "Foreach"
+        },
+        "Compose_Today": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "f1fb746b-09b2-4955-916c-c6b1560d8f9a"
+          },
+          "type": "Compose",
+          "inputs": "@formatDateTime(utcNow(),'yyyy-MM-dd')"
+        },
+        "Compose_Window_End": {
+          "runAfter": {
+            "Compose_Today": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "227120e3-cf2a-4674-af75-305ce58820b4"
+          },
+          "type": "Compose",
+          "inputs": "@formatDateTime(addDays(utcNow(),30),'yyyy-MM-dd')"
+        },
+        "Compose_Org_Base_URL": {
+          "runAfter": {
+            "Compose_Window_End": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "84fcf01f-22bf-449d-b963-d4c73ac5d17c"
+          },
+          "type": "Compose",
+          "inputs": "https://org92e2e4df.crm11.dynamics.com"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

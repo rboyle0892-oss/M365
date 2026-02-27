@@ -1,4 +1,4 @@
-<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26021.145" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26021.00145">
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26022.150" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26022.00150">
   <Entities>
     <Entity>
       <Name LocalizedName="Budget" OriginalName="Budget">vmo_Budget</Name>
@@ -2310,6 +2310,7 @@
               <LogicalName>vmo_budget</LogicalName>
               <RequiredLevel>required</RequiredLevel>
               <DisplayMask>ValidForAdvancedFind|ValidForForm|ValidForGrid</DisplayMask>
+              <ImeMode>auto</ImeMode>
               <ValidForUpdateApi>1</ValidForUpdateApi>
               <ValidForReadApi>1</ValidForReadApi>
               <ValidForCreateApi>1</ValidForCreateApi>
@@ -3605,7 +3606,35 @@
       </LocalizedNames>
     </AppModuleSiteMap>
   </AppModuleSiteMaps>
-  <AppModules />
+  <AppModules>
+    <AppModule>
+      <UniqueName>vmo_VMOMVP</UniqueName>
+      <IntroducedVersion>1.0.0.0</IntroducedVersion>
+      <WebResourceId>953b9fac-1e5e-e611-80d6-00155ded156f</WebResourceId>
+      <OptimizedFor></OptimizedFor>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+      <FormFactor>1</FormFactor>
+      <ClientType>4</ClientType>
+      <NavigationType>0</NavigationType>
+      <AppModuleComponents>
+        <AppModuleComponent type="62" schemaName="vmo_VMOMVP" />
+      </AppModuleComponents>
+      <AppModuleRoleMaps>
+        <Role id="{627090ff-40a3-4053-8790-584edc5be201}" />
+        <Role id="{119f245c-3cc8-4b62-b31c-d1a046ced15d}" />
+      </AppModuleRoleMaps>
+      <LocalizedNames>
+        <LocalizedName description="VMO MVP" languagecode="1033" />
+      </LocalizedNames>
+      <appsettings>
+        <appsetting settingdefinitionid.uniquename="AppChannel">
+          <iscustomizable>1</iscustomizable>
+          <value>1</value>
+        </appsetting>
+      </appsettings>
+    </AppModule>
+  </AppModules>
   <EntityDataProviders />
   <connectionreferences>
     <connectionreference connectionreferencelogicalname="vmo_sharedcommondataserviceforapps_53838">
@@ -3618,6 +3647,14 @@
     </connectionreference>
     <connectionreference connectionreferencelogicalname="vmo_sharedcommondataserviceforapps_6a6b5">
       <connectionreferencedisplayname>Microsoft Dataverse VMOMVP-6a6b5</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps</connectorid>
+      <iscustomizable>1</iscustomizable>
+      <promptingbehavior>0</promptingbehavior>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
+    <connectionreference connectionreferencelogicalname="vmo_sharedcommondataserviceforapps_74884">
+      <connectionreferencedisplayname>Microsoft Dataverse VMOMVP-74884</connectionreferencedisplayname>
       <connectorid>/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps</connectorid>
       <iscustomizable>1</iscustomizable>
       <promptingbehavior>0</promptingbehavior>
