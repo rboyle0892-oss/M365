@@ -1,0 +1,199 @@
+{
+  "name": "BCR Readiness Request Generator",
+  "properties": {
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "schedule": {
+              "hours": [
+                7
+              ],
+              "minutes": [
+                0
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialize_varOrgUrl": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varOrgUrl",
+                "type": "string",
+                "value": "https://REPLACE-ORG.crm.dynamics.com"
+              }
+            ]
+          }
+        },
+        "Initialize_varWindowEnd": {
+          "runAfter": {
+            "Initialize_varOrgUrl": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varWindowEnd",
+                "type": "string",
+                "value": "@{formatDateTime(addDays(utcNow(),30),'yyyy-MM-dd')}"
+              }
+            ]
+          }
+        },
+        "List_Budgets": {
+          "runAfter": {
+            "Initialize_varWindowEnd": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "bcr_budgetlines",
+              "$select": "bcr_budgetlineid,bcr_budgetcode,bcr_enddate,bcr_smeemail,statecode,statuscode",
+              "$filter": "statecode eq 0 and statuscode eq 1 and bcr_smeemail ne null and bcr_enddate le @{variables('varWindowEnd')}"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each_Budget": {
+          "foreach": "@outputs('List_Budgets')?['body/value']",
+          "runAfter": {
+            "List_Budgets": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach",
+          "actions": {
+            "List_ReadinessRequests_for_Budget": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "bcr_readinessrequests",
+                  "$select": "bcr_readinessrequestid,bcr_name,_bcr_budget_value,statecode",
+                  "$filter": "_bcr_budget_value eq '@{items('Apply_to_each_Budget')?['bcr_budgetlineid']}' and statecode eq 0"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Condition_NoDuplicate": {
+              "runAfter": {
+                "List_ReadinessRequests_for_Budget": [
+                  "Succeeded"
+                ]
+              },
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@length(outputs('List_ReadinessRequests_for_Budget')?['body/value'])",
+                  0
+                ]
+              },
+              "actions": {
+                "Add_new_ReadinessRequest": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "CreateRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "bcr_readinessrequests",
+                      "item/bcr_name": "@{concat('Readiness - ', coalesce(items('Apply_to_each_Budget')?['bcr_budgetcode'],'(No Code)'))}",
+                      "item/bcr_smeemail": "@{items('Apply_to_each_Budget')?['bcr_smeemail']}",
+                      "item/bcr_budget@odata.bind": "@{concat('/bcr_budgetlines(', items('Apply_to_each_Budget')?['bcr_budgetlineid'], ')')}"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Compose_RecordUrl": {
+                  "runAfter": {
+                    "Add_new_ReadinessRequest": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "@{concat(variables('varOrgUrl'), '/main.aspx?pagetype=entityrecord&etn=bcr_readinessrequest&id=', outputs('Add_new_ReadinessRequest')?['body/bcr_readinessrequestid'])}"
+                },
+                "Send_email_to_SME": {
+                  "runAfter": {
+                    "Compose_RecordUrl": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_office365",
+                      "operationId": "SendEmailV2",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                    },
+                    "parameters": {
+                      "emailMessage/To": "@{items('Apply_to_each_Budget')?['bcr_smeemail']}",
+                      "emailMessage/Subject": "Readiness request created for budget @{items('Apply_to_each_Budget')?['bcr_budgetcode']}",
+                      "emailMessage/Body": "<p>A readiness request has been created for your budget.</p><p>Please <a href='@{outputs('Compose_RecordUrl')}'>Open the request</a>, review pre-filled values, and click Submit.</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          }
+        }
+      }
+    },
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "connectionName": "shared-commondataser-READINESS",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+        "tier": "NotSpecified",
+        "apiName": "commondataserviceforapps"
+      },
+      "shared_office365": {
+        "connectionName": "shared-office365-READINESS",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+        "tier": "NotSpecified",
+        "apiName": "office365"
+      }
+    }
+  }
+}

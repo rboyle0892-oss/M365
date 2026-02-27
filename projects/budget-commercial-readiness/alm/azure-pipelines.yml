@@ -1,0 +1,135 @@
+trigger: none
+pr: none
+
+name: bcr-mvp-$(Date:yyyyMMdd)$(Rev:.r)
+
+variables:
+  - group: bcr-power-platform
+  - name: SolutionName
+    value: bcr_mvp
+  - name: SolutionZip
+    value: $(Pipeline.Workspace)/drop/bcr_mvp_unmanaged.zip
+
+stages:
+  - stage: Validate
+    displayName: Validate inputs and environment
+    jobs:
+      - job: validate
+        displayName: Validate artifact and Dataverse auth
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: PowerShell@2
+            displayName: Install Power Platform CLI
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                dotnet tool update --global Microsoft.PowerApps.CLI.Tool || dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+                echo "##vso[task.prependpath]$HOME/.dotnet/tools"
+                pac --version
+
+          - task: DownloadPipelineArtifact@2
+            displayName: Download solution artifact
+            inputs:
+              buildType: current
+              artifact: drop
+              path: $(Pipeline.Workspace)/drop
+
+          - task: PowerShell@2
+            displayName: Verify solution artifact exists
+            inputs:
+              targetType: inline
+              pwsh: true
+              script: |
+                if (-not (Test-Path "$(SolutionZip)")) {
+                  throw "Solution zip not found: $(SolutionZip)"
+                }
+                Write-Host "Solution zip found: $(SolutionZip)"
+
+          - task: PowerShell@2
+            displayName: WhoAmI against target environment
+            inputs:
+              filePath: $(Build.SourcesDirectory)/projects/budget-commercial-readiness/alm/scripts/whoami.ps1
+              pwsh: true
+              arguments: >
+                -EnvironmentUrl "$(TARGET_ENV_URL)"
+                -TenantId "$(PP_TENANT_ID)"
+                -ClientId "$(PP_CLIENT_ID)"
+                -ClientSecret "$(PP_CLIENT_SECRET)"
+
+  - stage: Deploy
+    displayName: Import solution and configure environment
+    dependsOn: Validate
+    condition: succeeded('Validate')
+    jobs:
+      - deployment: deploy_unmanaged
+        displayName: Deploy unmanaged solution to target
+        environment: $(DeploymentEnvironmentName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: PowerShell@2
+                  displayName: Install Power Platform CLI
+                  inputs:
+                    targetType: inline
+                    pwsh: true
+                    script: |
+                      dotnet tool update --global Microsoft.PowerApps.CLI.Tool || dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+                      echo "##vso[task.prependpath]$HOME/.dotnet/tools"
+                      pac --version
+
+                - task: DownloadPipelineArtifact@2
+                  displayName: Download solution artifact
+                  inputs:
+                    buildType: current
+                    artifact: drop
+                    path: $(Pipeline.Workspace)/drop
+
+                - task: PowerShell@2
+                  displayName: Import unmanaged solution
+                  inputs:
+                    filePath: $(Build.SourcesDirectory)/projects/budget-commercial-readiness/alm/scripts/import-solution.ps1
+                    pwsh: true
+                    arguments: >
+                      -EnvironmentUrl "$(TARGET_ENV_URL)"
+                      -SolutionZip "$(SolutionZip)"
+                      -PublishWorkflows
+                      -TenantId "$(PP_TENANT_ID)"
+                      -ClientId "$(PP_CLIENT_ID)"
+                      -ClientSecret "$(PP_CLIENT_SECRET)"
+
+                - task: PowerShell@2
+                  displayName: Set Dataverse environment variables
+                  inputs:
+                    targetType: inline
+                    pwsh: true
+                    script: |
+                      $jsonPath = "$(Agent.TempDirectory)/bcr-env-values.json"
+                      $obj = @{
+                        bcr_AppBaseUrl = "$(BCR_APP_BASE_URL)"
+                        bcr_ProcurementNotificationMailbox = "$(BCR_PROCUREMENT_MAILBOX)"
+                        bcr_DefaultReminderCadenceDays = "$(BCR_REMINDER_CADENCE)"
+                      } | ConvertTo-Json
+                      Set-Content -Path $jsonPath -Value $obj -Encoding UTF8
+
+                      pwsh "$(Build.SourcesDirectory)/projects/budget-commercial-readiness/alm/scripts/set-env-vars.ps1" \
+                        -EnvironmentUrl "$(TARGET_ENV_URL)" \
+                        -ValuesJsonPath $jsonPath \
+                        -TenantId "$(PP_TENANT_ID)" \
+                        -ClientId "$(PP_CLIENT_ID)" \
+                        -ClientSecret "$(PP_CLIENT_SECRET)"
+
+                - task: PowerShell@2
+                  displayName: Publish customizations
+                  inputs:
+                    targetType: inline
+                    pwsh: true
+                    script: |
+                      pac auth create --environment "$(TARGET_ENV_URL)" --tenant "$(PP_TENANT_ID)" --applicationId "$(PP_CLIENT_ID)" --clientSecret "$(PP_CLIENT_SECRET)"
+                      pac solution publish
