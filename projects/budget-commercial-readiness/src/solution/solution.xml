@@ -17,7 +17,7 @@
     </Publisher>
     <RootComponents>
       <RootComponent type="29" schemaName="bcr_budgetline" behavior="0" />
-      <RootComponent type="29" schemaName="bcr_readinessrequest" behavior="0" />
+      <RootComponent type="29" schemaName="bcr_readinesstask" behavior="0" />
       <RootComponent type="29" schemaName="bcr_rules" behavior="0" />
       <RootComponent type="29" schemaName="bcr_eventlog" behavior="0" />
       <RootComponent type="29" schemaName="workflow" id="{f238df14-6b7a-4f56-90b6-b7a62c9f7aa2}" behavior="0" />
