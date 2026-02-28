@@ -17,7 +17,7 @@ This approach keeps Dataverse schema, flows, app artifacts, environment variable
 - `alm/scripts/export-solution.ps1` - exports unmanaged solution from source environment.
 - `alm/scripts/import-solution.ps1` - imports unmanaged solution into target environment.
 - `alm/scripts/set-env-vars.ps1` - updates Dataverse environment variable values post-import.
-- `alm/solution/README.md` - unpacked solution layout and first-time setup instructions.
+- `alm/solution/README.md` - unpack/pack workflow guidance for the canonical source in `src/solution/`.
 
 ---
 
