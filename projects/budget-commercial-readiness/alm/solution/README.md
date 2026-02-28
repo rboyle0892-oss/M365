@@ -4,31 +4,29 @@ This folder is reserved for the unpacked Dataverse solution contents.
 
 ## First-time setup
 1. Export your Dev unmanaged solution zip (example name: `bcr_mvp_unmanaged.zip`).
-2. Unpack it into this folder using Power Platform CLI:
+2. Unpack it into the canonical solution source folder using Power Platform CLI:
    ```powershell
    pac solution unpack \
      --zipfile ./alm/solution/bcr_mvp_unmanaged.zip \
-     --folder ./alm/solution/src \
+     --folder ./src/solution \
      --packagetype Unmanaged
    ```
-3. Commit the unpacked files under `alm/solution/src` to source control.
+3. Commit the unpacked files under `src/solution` to source control.
 
 ## Recommended committed structure
 ```
-alm/solution/
-  README.md
-  src/
-    Other/
-    Workflows/
-    CanvasApps/
-    Customizations.xml
-    solution.xml
+src/solution/
+  Other/
+  Workflows/
+  CanvasApps/
+  Customizations.xml
+  solution.xml
 ```
 
 ## Ongoing ALM workflow
 - After Dev changes:
   1. Export unmanaged solution.
-  2. Re-unpack into `alm/solution/src` (overwrite existing files).
+  2. Re-unpack into `src/solution` (overwrite existing files).
   3. Review diff.
   4. Commit with associated docs/flow/app updates.
 - For release pipeline:
@@ -36,7 +34,7 @@ alm/solution/
   - Option B: Repack from source on build agent:
     ```powershell
     pac solution pack \
-      --folder ./alm/solution/src \
+      --folder ./src/solution \
       --zipfile ./alm/solution/bcr_mvp_unmanaged.zip \
       --packagetype Unmanaged
     ```
