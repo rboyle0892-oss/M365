@@ -66,3 +66,11 @@ Commercial Discussion Ready is not a passive state; it is set only by event and 
 10. Approval sets Budget Line to Commercial Discussion Ready; rejection routes back to SME.
 11. Procurement marks commercial discussion start/complete milestones.
 12. Procurement records one or more POs; events/stages update and line can be closed.
+
+
+## Repository implementation index
+- Solution source (Dataverse solution artifacts): `projects/budget-commercial-readiness/src/solution/`
+- Flow assets: `projects/budget-commercial-readiness/src/solution/Workflows/`
+- App blueprint and formulas: `projects/budget-commercial-readiness/powerapps/`
+- Dataverse target schema documentation: `projects/budget-commercial-readiness/dataverse/schema.md`
+- Validation checks: `projects/budget-commercial-readiness/tests/validate-solution-structure.sh`

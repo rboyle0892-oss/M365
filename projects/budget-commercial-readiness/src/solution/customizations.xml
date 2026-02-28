@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.24095.001" languagecode="1033" generatedBy="Codex">
+  <Entities>
+    <Entity Name="bcr_budgetline" DisplayName="Budget Line" IntroducedVersion="1.0.0.0">
+      <attributes>
+        <attribute PhysicalName="bcr_budgetlineid" LogicalName="bcr_budgetlineid" Type="Uniqueidentifier" />
+        <attribute PhysicalName="bcr_budgetlinekey" LogicalName="bcr_budgetlinekey" Type="String" />
+        <attribute PhysicalName="bcr_budgetcode" LogicalName="bcr_budgetcode" Type="String" />
+        <attribute PhysicalName="bcr_enddate" LogicalName="bcr_enddate" Type="DateTime" />
+        <attribute PhysicalName="bcr_pillar" LogicalName="bcr_pillar" Type="Picklist" />
+        <attribute PhysicalName="_ownerid_value" LogicalName="ownerid" Type="Lookup" LookupType="systemuser" />
+        <attribute PhysicalName="statecode" LogicalName="statecode" Type="State" />
+        <attribute PhysicalName="statuscode" LogicalName="statuscode" Type="Status" />
+        <attribute PhysicalName="bcr_smeemail" LogicalName="bcr_smeemail" Type="String" />
+      </attributes>
+    </Entity>
+    <Entity Name="bcr_readinesstask" DisplayName="Readiness Task" IntroducedVersion="1.0.0.0">
+      <attributes>
+        <attribute PhysicalName="bcr_readinesstaskid" LogicalName="bcr_readinesstaskid" Type="Uniqueidentifier" />
+        <attribute PhysicalName="bcr_tasktitle" LogicalName="bcr_tasktitle" Type="String" />
+        <attribute PhysicalName="bcr_budgetline" LogicalName="bcr_budgetline" Type="Lookup" LookupType="bcr_budgetline" />
+        <attribute PhysicalName="bcr_assignedto" LogicalName="bcr_assignedto" Type="Lookup" LookupType="systemuser" />
+        <attribute PhysicalName="bcr_duedate" LogicalName="bcr_duedate" Type="DateTime" />
+        <attribute PhysicalName="bcr_status" LogicalName="bcr_status" Type="Picklist" />
+        <attribute PhysicalName="bcr_submissionnotes" LogicalName="bcr_submissionnotes" Type="Memo" />
+        <attribute PhysicalName="bcr_submittedat" LogicalName="bcr_submittedat" Type="DateTime" />
+        <attribute PhysicalName="bcr_validatedat" LogicalName="bcr_validatedat" Type="DateTime" />
+        <attribute PhysicalName="bcr_rejectionreason" LogicalName="bcr_rejectionreason" Type="Memo" />
+      </attributes>
+    </Entity>
+    <Entity Name="bcr_rules" DisplayName="Rules" IntroducedVersion="1.0.0.0">
+      <attributes>
+        <attribute PhysicalName="bcr_rulesid" LogicalName="bcr_rulesid" Type="Uniqueidentifier" />
+        <attribute PhysicalName="bcr_rulename" LogicalName="bcr_rulename" Type="String" />
+        <attribute PhysicalName="bcr_pillar" LogicalName="bcr_pillar" Type="Picklist" />
+        <attribute PhysicalName="bcr_sme_default_due_days" LogicalName="bcr_sme_default_due_days" Type="Integer" />
+        <attribute PhysicalName="bcr_pillarlead" LogicalName="bcr_pillarlead" Type="Lookup" LookupType="systemuser" />
+      </attributes>
+    </Entity>
+    <Entity Name="bcr_eventlog" DisplayName="Event Log" IntroducedVersion="1.0.0.0">
+      <attributes>
+        <attribute PhysicalName="bcr_eventlogid" LogicalName="bcr_eventlogid" Type="Uniqueidentifier" />
+        <attribute PhysicalName="bcr_eventname" LogicalName="bcr_eventname" Type="String" />
+        <attribute PhysicalName="bcr_budgetline" LogicalName="bcr_budgetline" Type="Lookup" LookupType="bcr_budgetline" />
+        <attribute PhysicalName="bcr_eventtype" LogicalName="bcr_eventtype" Type="Picklist" />
+        <attribute PhysicalName="bcr_occurredat" LogicalName="bcr_occurredat" Type="DateTime" />
+      </attributes>
+    </Entity>
+  </Entities>
+</ImportExportXml>
